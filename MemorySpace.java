@@ -58,8 +58,38 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
-		return -1;
+		 // Scan through the free list to find a suitable block
+		 Node current = freeList.getFirst();
+		 while (current != null) {
+			 MemoryBlock freeBlock = current.block;
+	 
+			 // If a block is found that is large enough
+			 if (freeBlock.length >= length) {
+				 // Create a new block to allocate
+				 MemoryBlock allocatedBlock = new MemoryBlock(freeBlock.baseAddress, length);
+	 
+				 // Add the allocated block to the allocated list
+				 allocatedList.addLast(allocatedBlock);
+	 
+				 // Update the free block
+				 if (freeBlock.length == length) {
+					 // If the block exactly matches the requested size, remove it from freeList
+					 freeList.remove(current);
+				 } else {
+					 // Otherwise, reduce the size of the free block and update its base address
+					 freeBlock.baseAddress += length;
+					 freeBlock.length -= length;
+				 }
+	 
+				 // Return the base address of the allocated block
+				 return allocatedBlock.baseAddress;
+			 }
+	 
+			 current = current.next;
+		 }
+	 
+		 // If no suitable block was found, return -1
+		 return -1;
 	}
 
 	/**
@@ -71,7 +101,22 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		Node current = allocatedList.getFirst();
+		while (current != null) {
+			MemoryBlock allocatedBlock = current.block;
+	
+			// Find the block with the matching base address
+			if (allocatedBlock.baseAddress == address) {
+				// Remove the block from the allocated list
+				allocatedList.remove(current);
+	
+				// Add the freed block to the free list
+				freeList.addLast(allocatedBlock);
+				return;
+			}
+	
+			current = current.next;
+		}
 	}
 	
 	/**
@@ -88,6 +133,30 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		//// Write your code here
+		 // If there's only one or no free block, no need to defragment
+		 if (freeList.getSize() <= 1) return;
+
+		 // Create a new list to hold the defragmented blocks
+		 LinkedList defraggedFreeList = new LinkedList();
+	 
+		 Node current = freeList.getFirst();
+		 MemoryBlock currentBlock = current.block;
+		 
+		 while (current != null) {
+			 // If the next block is adjacent, merge them
+			 if (current.next != null && currentBlock.baseAddress + currentBlock.length == current.next.block.baseAddress) {
+				 currentBlock.length += current.next.block.length;
+				 freeList.remove(current.next);  // Remove the next block from freeList
+			 } else {
+				 // Otherwise, add the current block to the new defragged list
+				 defraggedFreeList.addLast(currentBlock);
+				 currentBlock = current.next.block;
+			 }
+	 
+			 current = current.next;
+		 }
+	 
+		 // Set the freeList to the defragged version
+		 freeList = defraggedFreeList;
 	}
 }
