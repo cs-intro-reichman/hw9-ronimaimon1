@@ -136,27 +136,30 @@ public class MemorySpace {
 		 // If there's only one or no free block, no need to defragment
 		 if (freeList.getSize() <= 1) return;
 
-		 // Create a new list to hold the defragmented blocks
-		 LinkedList defraggedFreeList = new LinkedList();
-	 
+		 // Start traversing the free list
 		 Node current = freeList.getFirst();
-		 MemoryBlock currentBlock = current.block;
-		 
-		 while (current != null) {
-			 // If the next block is adjacent, merge them
-			 if (current.next != null && currentBlock.baseAddress + currentBlock.length == current.next.block.baseAddress) {
-				 currentBlock.length += current.next.block.length;
-				 freeList.remove(current.next);  // Remove the next block from freeList
+		 Node prev = null;
+	 
+		 while (current != null && current.next != null) {
+			 MemoryBlock currentBlock = current.block;
+			 MemoryBlock nextBlock = current.next.block;
+	 
+			 // Check if the current block is adjacent to the next block
+			 if (currentBlock.baseAddress + currentBlock.length == nextBlock.baseAddress) {
+				 // Merge the blocks
+				 currentBlock.length += nextBlock.length;
+				 
+				 // Remove the next block from the free list
+				 freeList.remove(current.next);
+	 
+				 // No need to move `prev` forward, as we just merged the blocks
 			 } else {
-				 // Otherwise, add the current block to the new defragged list
-				 defraggedFreeList.addLast(currentBlock);
-				 currentBlock = current.next.block;
+				 // If they aren't adjacent, move to the next node
+				 prev = current;
 			 }
 	 
+			 // Move to the next node
 			 current = current.next;
 		 }
-	 
-		 // Set the freeList to the defragged version
-		 freeList = defraggedFreeList;
 	}
 }
