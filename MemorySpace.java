@@ -131,28 +131,36 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		if (freeList.getSize() == 0) {
-			return; // No free blocks, no defrag needed
+		// Step 1: Traverse the list to identify all blocks that can be merged
+		Node current = freeList.getFirst();
+    
+		// Temporary list to hold defragmented blocks
+		LinkedList tempList = new LinkedList();
+	
+		// Traverse the entire freeList to check for adjacent free blocks
+		while (current != null) {
+			// If the current block and the next block are adjacent, merge them
+			if (current.next != null && current.block.baseAddress + current.block.length == current.next.block.baseAddress) {
+				// Merge the blocks by extending the current block's length
+				current.block.length += current.next.block.length;
+				// Skip the next block (effectively removing it from the list)
+				current.next = current.next.next;
+				freeList.remove(current.next); // Remove the merged block from the freeList
+			} else {
+				// Otherwise, just add the current block to the temp list
+				tempList.addLast(current.block);
+				current = current.next;
+			}
 		}
 	
-		Node current = freeList.getFirst();
-		int currentPosition = 0; // Start at the first memory address
+		// Step 2: Replace the original freeList with the defragmented version
+		freeList = tempList;
 	
-		// Traverse through the free list
-		while (current != null) {
-			MemoryBlock block = current.block;
-	
-			// If the block is not at the current position, move it
-			if (block.baseAddress != currentPosition) {
-				// Move the block
-				block.baseAddress = currentPosition;
-			}
-	
-			// Update the current position
-			currentPosition += block.length;
-	
-			// Move to the next node in the free list
+		// Step 3: Update the 'last' pointer after defrag
+		current = freeList.getFirst();
+		while (current != null && current.next != null) {
 			current = current.next;
+		}
+		freeList.addLast(current.block);  // Set last pointer to the last node in the defragmented list
 	}
-}
 }
