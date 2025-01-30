@@ -207,30 +207,37 @@ public class LinkedList {
 	 *        the node that will be removed from this list
 	 */
 	public void remove(Node node) {
-		if (first == null || node == null) return;
-
-    // Special case: removing the first node
-    if (first == node) {
-        first = first.next;
-        if (first == null) {
-            last = null;  // List is now empty
-        }
-        size--;
-        return;
-    }
-
-    Node current = first;
-    while (current.next != null) {
-        if (current.next == node) {
-            current.next = current.next.next;
-            if (current.next == null) {
-                last = current; // Updated last node
-            }
-            size--;
-            return;
-        }
-        current = current.next;
-    }
+		if (node == null) {
+			throw new NullPointerException("index must be between 0 and size");
+		}
+	
+		if (first == null) return; // If the list is empty, do nothing
+	
+		// Special case: removing the first node
+		if (first == node) {
+			first = first.next;
+			if (first == null) {
+				last = null;  // List is now empty
+			}
+			size--;
+			return;
+		}
+	
+		Node current = first;
+		while (current.next != null) {
+			if (current.next == node) {
+				current.next = current.next.next;
+				if (current.next == null) {
+					last = current; // Updated last node
+				}
+				size--;
+				return;
+			}
+			current = current.next;
+		}
+	
+		// If the node wasn't found in the list
+		throw new IllegalArgumentException("index must be between 0 and size");
 	}
 
 	/**
@@ -301,7 +308,7 @@ public class LinkedList {
 			current = current.next;
 		}
 	
-		throw new IllegalArgumentException("Block not found in list");
+		throw new IllegalArgumentException("index must be between 0 and size");
 	}	
 
 	/**
