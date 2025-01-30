@@ -272,32 +272,36 @@ public class LinkedList {
 	 *         if the given memory block is not in this list
 	 */
 	public void remove(MemoryBlock block) {
-		if (first == null || block == null) return;
-
-    // Special case: removing the first node
-    if (first.block.equals(block)) {
-        first = first.next;
-        if (first == null) {
-            last = null;  // List is now empty
-        }
-        size--;
-        return;
-    }
-
-    Node current = first;
-    while (current.next != null) {
-        if (current.next.block.equals(block)) {
-            current.next = current.next.next;
-            if (current.next == null) {
-                last = current; // Updated last node
-            }
-            size--;
-            return;
-        }
-        current = current.next;
-    }
-
-    throw new IllegalArgumentException("index must be between 0 and size");
+		if (block == null) {
+			throw new IllegalArgumentException("index must be between 0 and size");
+		}
+		
+		if (first == null) return; // If the list is empty, do nothing
+		
+		// Special case: removing the first node
+		if (first.block.equals(block)) {
+			first = first.next;
+			if (first == null) {
+				last = null;  // List is now empty
+			}
+			size--;
+			return;
+		}
+	
+		Node current = first;
+		while (current.next != null) {
+			if (current.next.block.equals(block)) {
+				current.next = current.next.next;
+				if (current.next == null) {
+					last = current; // Updated last node
+				}
+				size--;
+				return;
+			}
+			current = current.next;
+		}
+	
+		throw new IllegalArgumentException("Block not found in list");
 	}	
 
 	/**
