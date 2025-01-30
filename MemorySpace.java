@@ -147,59 +147,38 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		// If the freeList has fewer than 2 blocks, no need to defrag
-		if (freeList.getSize() < 2) {
-			return;
-		}
-	
-		// Step 1: Merge contiguous free blocks in freeList
+		// Check if there are any free blocks
+		if (freeList.getSize() == 0) return;
+
+		// Merge the free blocks into one continuous block
 		Node current = freeList.getFirst();
+		int freeSpaceStart = current.block.baseAddress;
+	
+		// Start merging blocks
 		while (current != null && current.next != null) {
-			Node nextNode = current.next;
-			if (current.block.baseAddress + current.block.length == nextNode.block.baseAddress) {
-				// Merge current and nextNode
-				current.block.length += nextNode.block.length;  // Increase current block size
-				current.next = nextNode.next;  // Remove nextNode from the list
-				if (nextNode == freeList.getLast()) {
-					freeList.last = current;  // Update the last pointer if necessary
-				}
+			if (current.block.baseAddress + current.block.length == current.next.block.baseAddress) {
+				// Blocks are adjacent, merge them
+				current.block.length += current.next.block.length;
+				freeList.remove(current.next);
 			} else {
-				current = current.next;  // Move to the next node
+				current = current.next;
 			}
 		}
 	
-		// Step 2: Shift allocated blocks towards the beginning
-		int currentAddress = 0;
-		Node allocatedNode = allocatedList.getFirst();
-		while (allocatedNode != null) {
-			// Move the block to the current address
-			allocatedNode.block.baseAddress = currentAddress;
-			currentAddress += allocatedNode.block.length;
-			allocatedNode = allocatedNode.next;
-		}
-	
-		// Step 3: Rebuild the free list by filling in the gaps
-		freeList = new LinkedList();  // Clear out the previous freeList
-		Node prev = null;
+		// After merging free blocks, move the allocated blocks
 		current = allocatedList.getFirst();
-		while (current != null) {
-			// Create a new free block between allocated blocks
-			if (prev != null) {
-				int gapSize = current.block.baseAddress - (prev.block.baseAddress + prev.block.length);
-				if (gapSize > 0) {
-					freeList.addLast(new MemoryBlock(prev.block.baseAddress + prev.block.length, gapSize));
-				}
-			}
-			prev = current;
-			current = current.next;
-		}
+		int freeAddress = freeSpaceStart; // We will use the first available address
 	
-		// Finally, add a free block at the end of the memory if there's space left
-		if (prev != null) {
-			int remainingSpace = maxSize - (prev.block.baseAddress + prev.block.length);
-			if (remainingSpace > 0) {
-				freeList.addLast(new MemoryBlock(prev.block.baseAddress + prev.block.length, remainingSpace));
+		while (current != null) {
+			// If the current block can be moved to free space
+			if (current.block.baseAddress != freeAddress) {
+				// Move the block
+				MemoryBlock movedBlock = new MemoryBlock(freeAddress, current.block.length);
+				allocatedList.remove(current);
+				allocatedList.addLast(movedBlock); // Place the moved block in the allocated list
 			}
+			freeAddress += current.block.length;
+			current = current.next;
 		}
 	}
 }
