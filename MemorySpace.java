@@ -101,28 +101,27 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		if (freeList.getSize() == 0) {
-			throw new IllegalArgumentException("index must be between 0 and size");
-		}
-	
 		ListIterator allocatedIterator = allocatedList.iterator();
-		MemoryBlock blockToFree = null;
-	
-		// Search for the block in allocatedList
-		while (allocatedIterator.hasNext()) {
-			MemoryBlock block = allocatedIterator.next();
-			if (block.baseAddress == address) {
-				blockToFree = block;
-				break;
-			}
-		}
-	
-		// If found, remove from allocatedList and add to freeList
-		if (blockToFree != null) {
-			allocatedList.remove(blockToFree);
-			freeList.addLast(blockToFree);
-		}
-	}
+    MemoryBlock blockToFree = null;
+
+    // Search for the block in allocatedList
+    while (allocatedIterator.hasNext()) {
+        MemoryBlock block = allocatedIterator.next();
+        if (block.baseAddress == address) {
+            blockToFree = block;
+            break;
+        }
+    }
+
+    // If the block was not found, throw an exception
+    if (blockToFree == null) {
+        throw new IllegalArgumentException("index must be between 0 and size");
+    }
+
+    // Remove from allocatedList and add to freeList
+    allocatedList.remove(blockToFree);
+    freeList.addLast(blockToFree);
+}
 	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
@@ -139,33 +138,30 @@ public class MemorySpace {
 	 */
 	public void defrag() {
 		if (freeList.getSize() < 2) {
-			return; // No need to defragment if there are fewer than two blocks
+			return; // No need to defragment if fewer than two blocks
 		}
 	
-		boolean merged; // To track if a merge happens
+		ListIterator iterator = freeList.iterator();
+		MemoryBlock previous = iterator.next(); // First block in freeList
 	
-		do {
-			merged = false;
-			ListIterator iterator = freeList.iterator();
-			MemoryBlock previous = iterator.next(); // First block in freeList
+		while (iterator.hasNext()) {
+			MemoryBlock current = iterator.next();
 	
-			while (iterator.hasNext()) {
-				MemoryBlock current = iterator.next();
+			// Check if adjacent blocks can be merged
+			if (previous.baseAddress + previous.length == current.baseAddress) {
+				// Merge the two blocks
+				previous.length += current.length;
 	
-				// Check if the current block is adjacent to the previous block
-				if (previous.baseAddress + previous.length == current.baseAddress) {
-					// Merge the two blocks
-					previous.length += current.length;
+				// Remove current block safely
+				freeList.remove(current);
 	
-					// Remove merged block from freeList
-					freeList.remove(current);
-	
-					merged = true; // A merge happened, so we continue the loop
-				} else {
-					// Move forward only if no merge happened
-					previous = current;
-				}
+				// Restart iteration to ensure all merges happen
+				iterator = freeList.iterator();
+				previous = iterator.next(); // Reset to first block
+			} else {
+				// Move to the next block only if no merge happened
+				previous = current;
 			}
-		} while (merged); // Continue until no more merges happen
+		}
 	}
 }
