@@ -101,21 +101,24 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		if (address < 0 || address >= freeList.getSize()) {
-			throw new IllegalArgumentException("index must be between 0 and size");
-		}
-		
-		// Try to find the block at the given index
-		MemoryBlock block = freeList.getBlock(address);
-		
-		// If the block is null, it means the block wasn't found
-		if (block == null) {
-			throw new IllegalArgumentException("Invalid memory block");
-		}
-		
-		// Proceed with freeing the block (add it to the free list, for example)
-		freeList.remove(block); // Assuming you want to remove it from the list
-	}
+		ListIterator allocatedIterator = allocatedList.iterator();
+    	MemoryBlock blockToFree = null;
+
+    	// Search for the block in allocatedList
+    	while (allocatedIterator.hasNext()) {
+        	MemoryBlock block = allocatedIterator.next();
+        	if (block.baseAddress == address) {
+            	blockToFree = block;
+            	break;
+        }
+    }
+
+    // If found, remove from allocatedList and add to freeList
+    if (blockToFree != null) {
+        allocatedList.remove(blockToFree);
+        freeList.addLast(blockToFree);
+    }
+}
 	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
@@ -131,36 +134,29 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		// Step 1: Traverse the list to identify all blocks that can be merged
-		Node current = freeList.getFirst();
-    
-		// Temporary list to hold defragmented blocks
-		LinkedList tempList = new LinkedList();
+		if (freeList.getSize() < 2) {
+			return; // No need to defragment if there are fewer than two blocks
+		}
 	
-		// Traverse the entire freeList to check for adjacent free blocks
-		while (current != null) {
-			// If the current block and the next block are adjacent, merge them
-			if (current.next != null && current.block.baseAddress + current.block.length == current.next.block.baseAddress) {
-				// Merge the blocks by extending the current block's length
-				current.block.length += current.next.block.length;
-				// Skip the next block (effectively removing it from the list)
-				current.next = current.next.next;
-				freeList.remove(current.next); // Remove the merged block from the freeList
+		ListIterator iterator = freeList.iterator();
+		MemoryBlock previous = iterator.next(); // First block in freeList
+	
+		while (iterator.hasNext()) {
+			MemoryBlock current = iterator.next();
+	
+			// Check if the current block is adjacent to the previous block
+			if (previous.baseAddress + previous.length == current.baseAddress) {
+				// Merge: Expand previous block
+				previous.length += current.length;
+	
+				// Remove merged block from freeList
+				freeList.remove(current);
+				
+				// Continue checking with updated 'previous' block (DO NOT move forward)
 			} else {
-				// Otherwise, just add the current block to the temp list
-				tempList.addLast(current.block);
-				current = current.next;
+				// Move forward only when no merge happens
+				previous = current;
 			}
 		}
-	
-		// Step 2: Replace the original freeList with the defragmented version
-		freeList = tempList;
-	
-		// Step 3: Update the 'last' pointer after defrag
-		current = freeList.getFirst();
-		while (current != null && current.next != null) {
-			current = current.next;
-		}
-		freeList.addLast(current.block);  // Set last pointer to the last node in the defragmented list
 	}
 }
